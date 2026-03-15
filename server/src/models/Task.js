@@ -1,16 +1,21 @@
 import mongoose from "mongoose"
 
-const ProjectSchema = new mongoose.Schema({
+const TaskSchema = new mongoose.Schema({
 
  title:String,
 
  description:String,
 
- createdBy:{
+ status:{
+  type:String,
+  default:"todo"
+ },
+
+ project:{
   type:mongoose.Schema.Types.ObjectId,
-  ref:"User"
+  ref:"Project"
  }
 
 })
 
-export default mongoose.model("Project",ProjectSchema)
+export default mongoose.model("Task",TaskSchema)

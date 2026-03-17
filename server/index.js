@@ -36,7 +36,7 @@ app.use(morgan("dev"));
 // Routes
 // =====================
 
-app.use("/api/auth", authRouter);
+app.use("/auth", authRouter);
 app.use("/api/projects", projectRouter);
 app.use("/api/tasks", taskRouter);
 // app.use("/api/ai", aiRouter);

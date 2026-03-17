@@ -1,9 +1,20 @@
-import React from 'react'
+import { Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { Toaster } from "react-hot-toast";
 
-const App = () => {
+function App() {
   return (
-    <div>App</div>
-  )
+    <>
+      <Toaster position="top-center" />
+
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </>
+  );
 }
 
-export default App
+export default App;

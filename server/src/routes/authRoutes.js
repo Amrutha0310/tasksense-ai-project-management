@@ -1,9 +1,18 @@
-import express from "express"
-import {registerUser,loginUser} from "../controller/authController.js"
+import express from 'express';
+import {
+  registerUser,
+  loginUser,
+  getProfile
+} from '../controller/authController.js';
+import  protect  from '../middleware/authMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.post("/register",registerUser)
-router.post("/login",loginUser)
+// Public routes
+router.post('/register', registerUser);
+router.post('/login', loginUser);
 
-export default router
+// Private route
+router.get('/profile', protect, getProfile);
+
+export default router;

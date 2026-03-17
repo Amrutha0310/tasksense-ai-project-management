@@ -1,10 +1,11 @@
-import express from "express"
-import {createProject,getProjects} from "../controller/projectController.js"
-import {authMiddleware} from "../middleware/authMiddleware.js"
+import express from 'express';
+import protect  from "../middleware/authMiddleware.js";  // Correct import
 
-const router = express.Router()
+const router = express.Router();
 
-router.post("/create",authMiddleware,createProject)
-router.get("/",authMiddleware,getProjects)
+// Use protect middleware
+router.get('/projects', protect, (req, res) => {
+  res.json({ message: 'Protected route accessed' });
+});
 
-export default router
+export default router;

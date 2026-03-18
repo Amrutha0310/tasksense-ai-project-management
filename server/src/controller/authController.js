@@ -12,61 +12,45 @@ const generateToken = (id) => {
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password } = req.body;
-
-    // Validation
-    if (!name || !email || !phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please fill all fields'
-      });
-    }
+    const { name, email, phone, password, role } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already registered'
-      });
+      return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // HASH PASSWORD WITH SALT IN CONTROLLER
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    console.log('✅ Password hashed successfully');
-
-    // Create user
+    // Create user with role (default to 'member' if not provided)
     const user = await User.create({
       name,
       email,
       phone,
-      password: hashedPassword // Store hashed password
+      password: hashedPassword,
+      role: role || 'member'
     });
 
     // Generate token
     const token = generateToken(user._id);
 
     res.status(201).json({
-      success: true,
       message: 'Registration successful',
-      data: {
+      user: {
         id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role,
-        token
-      }
+        role: user.role
+      },
+      token
     });
 
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -77,58 +61,36 @@ export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please enter email and password'
-      });
-    }
-
     // Find user
     const user = await User.findOne({ email });
-
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // COMPARE PASSWORD WITH BCRYPT IN CONTROLLER
+    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
-
-    console.log('✅ Password verified successfully');
 
     // Generate token
     const token = generateToken(user._id);
 
     res.json({
-      success: true,
       message: 'Login successful',
-      data: {
+      user: {
         id: user._id,
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role,
-        token
-      }
+        role: user.role
+      },
+      token
     });
 
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -138,16 +100,9 @@ export const loginUser = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
-    
-    res.json({
-      success: true,
-      data: user
-    });
+    res.json({ user });
   } catch (error) {
-    console.error('Profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

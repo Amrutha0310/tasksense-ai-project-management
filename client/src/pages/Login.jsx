@@ -55,13 +55,19 @@ export default function Login() {
         password
       });
 
-      // Store token based on remember me
+      console.log("Login response:", response.data);
+
+      // Get user data from response
+      const userData = response.data.data || response.data.user || response.data;
+      const token = response.data.token;
+
+      // Store token and user data based on remember me
       if (rememberMe) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(userData));
       } else {
-        sessionStorage.setItem("token", response.data.token);
-        sessionStorage.setItem("user", JSON.stringify(response.data.user));
+        sessionStorage.setItem("token", token);
+        sessionStorage.setItem("user", JSON.stringify(userData));
       }
 
       toast.success(
@@ -71,30 +77,66 @@ export default function Login() {
         </div>
       );
       
-      // Redirect to dashboard
+      // Redirect based on user role
+      const userRole = userData.role;
+      console.log("User role:", userRole);
+      
       setTimeout(() => {
-        navigate("/dashboard");
+        switch (userRole) {
+          case 'admin':
+            navigate("/admin-dashboard");
+            break;
+          case 'manager':
+            navigate("/manager-dashboard");
+            break;
+          case 'member':
+            navigate("/member-dashboard");
+            break;
+          default:
+            navigate("/dashboard");
+        }
       }, 1500);
 
     } catch (error) {
+      console.error("Login error:", error);
+      console.error("Error response:", error.response?.data);
+      
       // Handle different error cases
       if (error.response?.status === 401) {
         toast.error("Invalid email or password");
       } else if (error.response?.status === 404) {
         toast.error("Account not found. Please register first.");
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(error.response?.data?.message || "Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Quick fill demo credentials
-  const fillDemoCredentials = () => {
-    setEmail("john.doe@tasksense.com");
-    setPassword("password123");
-    toast.success("Demo credentials filled!");
+  // Quick fill demo credentials with different roles for testing
+  const fillDemoCredentials = (role) => {
+    switch(role) {
+      case 'admin':
+        setEmail("admin@tasksense.com");
+        setPassword("admin123");
+        toast.success("Admin credentials filled!");
+        break;
+      case 'manager':
+        setEmail("manager@tasksense.com");
+        setPassword("manager123");
+        toast.success("Manager credentials filled!");
+        break;
+      case 'member':
+        setEmail("member@tasksense.com");
+        setPassword("member123");
+        toast.success("Member credentials filled!");
+        break;
+      default:
+        setEmail("john.doe@tasksense.com");
+        setPassword("password123");
+        toast.success("Demo credentials filled!");
+    }
   };
 
   return (
@@ -117,9 +159,8 @@ export default function Login() {
           <div className="flex items-center space-x-3">
             <Link 
               to="/login" 
-               className="bg-[#2563eb] text-white px-4 py-1.5 rounded-lg text-sm hover:bg-[#1d4ed8] hover:shadow-md hover:scale-105 transition-all"
+              className="bg-[#2563eb] text-white px-4 py-1.5 rounded-lg text-sm hover:bg-[#1d4ed8] hover:shadow-md hover:scale-105 transition-all"
             >
-            
               Login
             </Link>
             <Link
@@ -152,31 +193,30 @@ export default function Login() {
                 and deliver projects faster with smart automation.
               </p>
 
-              {/* Feature List */}
-                
-            {/* Feature List with staggered animation */}
-            <div className="space-y-4">
-              {[
-                "AI-powered task prioritization",
-                "Real-time team collaboration",
-                "Automated progress tracking",
-                "Smart deadline predictions"
-              ].map((feature, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center space-x-3 group cursor-pointer"
-                  style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both` }}
-                >
-                <div className="w-5 h-5 bg-[#dbeafe] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <div className="w-2 h-2 bg-[#2563eb] rounded-full group-hover:animate-ping"></div>
+              {/* Feature List with staggered animation */}
+              <div className="space-y-4">
+                {[
+                  "AI-powered task prioritization",
+                  "Real-time team collaboration",
+                  "Automated progress tracking",
+                  "Smart deadline predictions"
+                ].map((feature, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center space-x-3 group cursor-pointer"
+                    style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both` }}
+                  >
+                    <div className="w-5 h-5 bg-[#dbeafe] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <div className="w-2 h-2 bg-[#2563eb] rounded-full group-hover:animate-ping"></div>
+                    </div>
+                    <span className="text-[#475569] group-hover:text-[#2563eb] transition-colors">
+                      {feature}
+                    </span>
                   </div>
-                  <span className="text-[#475569] group-hover:text-[#2563eb] transition-colors">
-                    {feature}
-                  </span>
-                </div>
-              ))}
-            </div>
-              {/* Stats */}
+                ))}
+              </div>
+
+              {/* Stats hard coded */}
               <div className="grid grid-cols-3 gap-3 pt-4">
                 {[
                   { value: "10k+", label: "Active users" },
@@ -210,7 +250,6 @@ export default function Login() {
                 </p>
               </div>
 
-             
               {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 
@@ -225,8 +264,10 @@ export default function Login() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 transition-all text-[#1e293b]"
+                      disabled={loading}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 transition-all text-[#1e293b] disabled:bg-gray-100"
                       placeholder="Enter your email"
+                      required
                     />
                   </div>
                 </div>
@@ -242,8 +283,10 @@ export default function Login() {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-9 pr-9 py-2 text-sm border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 transition-all text-[#1e293b]"
+                      disabled={loading}
+                      className="w-full pl-9 pr-9 py-2 text-sm border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 transition-all text-[#1e293b] disabled:bg-gray-100"
                       placeholder="Enter your password"
+                      required
                     />
                     <button
                       type="button"
@@ -306,21 +349,57 @@ export default function Login() {
                   </Link>
                 </p>
 
-                 {/* Demo Credentials */}
-              <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3 mb-4 hover:border-[#2563eb] transition-all group">
-                <p className="text-xs font-medium text-[#1e293b] mb-1 group-hover:text-[#2563eb] transition-colors">
-                  Demo Credentials:
-                </p>
-                <p className="text-xs text-[#64748b]">Email: john.doe@tasksense.com</p>
-                <p className="text-xs text-[#64748b]">Password: password123</p>
-                <button
-                  onClick={fillDemoCredentials}
-                  className="text-xs text-[#2563eb] mt-1 hover:underline hover:translate-x-1 transition-transform inline-block"
-                >
-                  Fill demo credentials →
-                </button>
-              </div>
+                {/* Demo Credentials with Multiple Roles */}
+                <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-3 hover:border-[#2563eb] transition-all group">
+                  <p className="text-xs font-medium text-[#1e293b] mb-2 group-hover:text-[#2563eb] transition-colors">
+                    Demo Credentials (Click to fill):
+                  </p>
+                  
+                  {/* Admin Demo */}
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#e2e8f0]">
+                    <div>
+                      <p className="text-xs font-medium text-[#1e293b]">Admin</p>
+                      <p className="text-xs text-[#64748b]">admin@tasksense.com</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('admin')}
+                      className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition"
+                    >
+                      Fill Admin
+                    </button>
+                  </div>
 
+                  {/* Manager Demo */}
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#e2e8f0]">
+                    <div>
+                      <p className="text-xs font-medium text-[#1e293b]">Manager</p>
+                      <p className="text-xs text-[#64748b]">manager@tasksense.com</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('manager')}
+                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition"
+                    >
+                      Fill Manager
+                    </button>
+                  </div>
+
+                  {/* Member Demo */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-[#1e293b]">Member</p>
+                      <p className="text-xs text-[#64748b]">member@tasksense.com</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fillDemoCredentials('member')}
+                      className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition"
+                    >
+                      Fill Member
+                    </button>
+                  </div>
+                </div>
               </form>
             </div>
           </div>
@@ -335,7 +414,7 @@ export default function Login() {
       </footer>
 
       {/* Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideDown {
           from {
             transform: translateY(-100%);

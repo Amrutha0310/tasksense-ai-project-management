@@ -20,9 +20,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  role: {
+   role: {
     type: String,
-    default: 'user'
+    enum: ['member', 'manager', 'admin'], // Restrict to only these three roles
+    // default: 'member' // Default role is 'member'
   },
   createdAt: {
     type: Date,
